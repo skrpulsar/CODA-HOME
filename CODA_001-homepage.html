@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>CODA Architecture — Modal Version</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cabin+Condensed:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --fg:#DADADA;
+      --dark:#3a3a3a;
+      --overlay-rgba: rgba(0,0,0,0.75);
+      --modal-radius: 6px;
+      --max-modal-width: 1000px;
+    }
+
+    /* --- Basic page (no scroll) --- */
+    html,body{
+      height:100%;
+      margin:0;
+      padding:0;
+      font-family: "Cabin Condensed", sans-serif;
+      color:var(--fg);
+      background:#000;
+      overflow:hidden; /* IMPORTANT: disable page scroll */
+    }
+
+    /* --- Background video full-screen --- */
+    .background-video{
+      position:fixed;
+      inset:0;
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      z-index:0;
+      pointer-events:none;
+    }
+
+    /* --- Top-left menu --- */
+    .menu{
+      position:fixed;
+      top:20px;
+      left:20px;
+      z-index:40;
+      user-select:none;
+    }
+    .menu button{
+      background:none;
+      border:1px solid rgba(218,218,218,0.18);
+      color:var(--fg);
+      padding:8px 12px;
+      font-size:16px;
+      cursor:pointer;
+      border-radius:4px;
+      backdrop-filter: blur(2px);
+    }
+    .menu .dropdown{
+      display:none;
+      margin-top:8px;
+      background: rgba(58,58,58,0.95);
+      padding:8px;
+      border-radius:6px;
+      width:160px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    }
+    .menu .dropdown a{
+      display:block;
+      color:var(--fg);
+      text-decoration:none;
+      padding:8px 6px;
+      font-size:15px;
+    }
+    .menu .dropdown a:hover{ background: rgba(218,218,218,0.06); }
+
+    /* --- Centered launch area / logo --- */
+    .launch{
+      position:fixed;
+      inset:0;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      z-index:10;
+      pointer-events:none; /* keep clicks going to menu/buttons */
+    }
+    .logo{
+      width:180px;
+      height:auto;
+      pointer-events:auto; /* allow clicking if needed */
+      transition:opacity .25s ease, transform .25s ease;
+    }
+
+    /* Hide logo when a modal is open */
+    .modal-open .logo{
+      opacity:0;
+      transform:scale(0.95);
+      pointer-events:none;
+      visibility:hidden;
+    }
+
+    /* --- Modal overlay container (dim) --- */
+    .modal-backdrop{
+      position:fixed;
+      inset:0;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      z-index:50;
+      /* non-blur dark backdrop */
+      background: var(--overlay-rgba);
+      padding:20px;
+      box-sizing:border-box;
+    }
+
+    /* show the backdrop when active */
+    .modal-backdrop.active{ display:flex; }
+
+    /* --- The modal box (solid dark) --- */
+    .modal {
+      background: var(--dark);
+      width:100%;
+      max-width: var(--max-modal-width);
+      max-height: calc(100vh - 80px);
+      border-radius: var(--modal-radius);
+      box-shadow: 0 12px 40px rgba(0,0,0,0.6);
+      position:relative;
+      overflow:hidden;
+      display:flex;
+      flex-direction:column;
+      color:var(--fg);
+    }
+
+    /* Modal header area */
+    .modal-header{
+      padding:18px 22px;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      flex:0 0 auto;
+    }
+    .modal-header h2{ margin:0; font-size:20px; letter-spacing:0.5px; }
+    .modal-body{
+      padding:18px 22px;
+      overflow-y:auto; /* internal scrolling allowed here */
+      -webkit-overflow-scrolling:touch;
+      flex:1 1 auto;
+    }
+
+    /* Close button (corner "×") */
+    .modal-close {
+      background:none;
+      border:none;
+      color:var(--fg);
+      font-size:22px;
+      cursor:pointer;
+      padding:6px 8px;
+    }
+
+    /* Footer area if needed */
+    .modal-footer{
+      padding:12px 18px;
+      border-top:1px solid rgba(255,255,255,0.04);
+      text-align:right;
+      flex:0 0 auto;
+    }
+
+    /* Responsive tweaks */
+    @media (max-width:720px){
+      :root{ --max-modal-width: 92vw; }
+      .menu{ left:12px; top:12px; }
+      .logo{ width:150px; }
+    }
+
+    /* --- Portfolio carousel inside modal --- */
+    .portfolio-carousel{
+      position:relative;
+      overflow:hidden;
+      background:transparent;
+    }
+    .portfolio-track{
+      display:flex;
+      transition:transform .45s ease;
+      width:100%;
+    }
+    .portfolio-slide{
+      min-width:100%;
+      box-sizing:border-box;
+      padding:8px 0;
+    }
+    .carousel-arrow{
+      position:absolute;
+      top:50%;
+      transform:translateY(-50%);
+      background:rgba(0,0,0,0.35);
+      border:none;
+      color:var(--fg);
+      font-size:20px;
+      padding:8px;
+      cursor:pointer;
+      border-radius:4px;
+    }
+    .carousel-arrow.left{ left:10px; }
+    .carousel-arrow.right{ right:10px; }
+
+    .thumb-gallery{
+      display:grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap:10px;
+      margin-top:12px;
+    }
+    .thumbnail{
+      width:100%;
+      height:110px;
+      object-fit:cover;
+      border-radius:4px;
+      cursor:pointer;
+      display:block;
+      border:1px solid rgba(255,255,255,0.04);
+    }
+
+    /* --- Lightbox inside modal (image preview) --- */
+    .inner-lightbox{
+      position:fixed;
+      inset:0;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      z-index:60; /* above modal */
+      background: rgba(0,0,0,0.8);
+    }
+    .inner-lightbox.active{ display:flex; }
+    .inner-lightbox img{
+      max-width:92%;
+      max-height:92%;
+      border-radius:6px;
+      box-shadow:0 12px 40px rgba(0,0,0,0.6);
+    }
+    .inner-lightbox .lb-close{
+      position:absolute;
+      top:18px;
+      right:18px;
+      color:var(--fg);
+      background:none;
+      border:none;
+      font-size:26px;
+      cursor:pointer;
+    }
+
+    /* small helper - visually-hidden for accessibility */
+    .sr-only{ position:absolute; left:-9999px; top:auto; width:1px; height:1px; overflow:hidden; }
+  </style>
+</head>
+<body>
+  <!-- Background video (keep visible) -->
+  <video class="background-video" autoplay loop muted playsinline>
+    <source src="background-video.webm" type="video/webm">
+    <!-- fallback image if video missing -->
+  </video>
+
+  <!-- Top-left menu -->
+  <div class="menu" aria-haspopup="true">
+    <button id="menu-toggle" aria-expanded="false" aria-controls="main-dropdown">&#9776; MENU</button>
+    <nav id="main-dropdown" class="dropdown" role="navigation" aria-label="Main menu">
+      <!-- we call openModal('about') etc. -->
+      <a href="#" data-target="about" onclick="openModal(event,'about')">ABOUT US</a>
+      <a href="#" data-target="services" onclick="openModal(event,'services')">SERVICES</a>
+      <a href="#" data-target="portfolio" onclick="openModal(event,'portfolio')">PORTFOLIO</a>
+      <a href="#" data-target="contact" onclick="openModal(event,'contact')">CONTACT</a>
+    </nav>
+  </div>
+
+  <!-- Centered launch area with logo (hidden when modal open) -->
+  <div class="launch">
+    <img src="CODA_logo.png" alt="CODA Architecture logo" class="logo" id="site-logo">
+  </div>
+
+  <!-- Modal containers (one backdrop reused for all modals) -->
+  <div id="modal-backdrop" class="modal-backdrop" role="dialog" aria-hidden="true" aria-modal="true">
+    <!-- Inner modal element (we'll swap content by JS into this box) -->
+    <div class="modal" id="modal-box" role="document" aria-labelledby="modal-title">
+      <div class="modal-header">
+        <h2 id="modal-title">Title</h2>
+        <div>
+          <button class="modal-close" id="modal-close" aria-label="Close modal">&times;</button>
+        </div>
+      </div>
+
+      <div class="modal-body" id="modal-body">
+        <!-- Content dynamically injected by JS -->
+      </div>
+
+      <div class="modal-footer" id="modal-footer" style="display:none;">
+        <!-- optional footer (kept hidden unless needed) -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Inner lightbox for previewing thumbnail images (above modal) -->
+  <div id="inner-lightbox" class="inner-lightbox" aria-hidden="true">
+    <button class="lb-close" aria-label="Close image">&times;</button>
+    <img id="lightbox-img" src="" alt="Preview image">
+  </div>
+
+  <script>
+    /* ========== Utility & DOM refs ========== */
+    const body = document.body;
+    const menuToggle = document.getElementById('menu-toggle');
+    const dropdown = document.getElementById('main-dropdown');
+    const backdrop = document.getElementById('modal-backdrop');
+    const modalBox = document.getElementById('modal-box');
+    const modalTitle = document.getElementById('modal-title');
+    const modalBody = document.getElementById('modal-body');
+    const modalClose = document.getElementById('modal-close');
+    const innerLightbox = document.getElementById('inner-lightbox');
+    const lightboxImg = document.getElementById('lightbox-img');
+    const lbCloseBtn = innerLightbox.querySelector('.lb-close');
+
+    /* toggle dropdown menu */
+    menuToggle.addEventListener('click', () => {
+      const isOpen = dropdown.style.display === 'block';
+      dropdown.style.display = isOpen ? 'none' : 'block';
+      menuToggle.setAttribute('aria-expanded', !isOpen);
+    });
+
+    /* close dropdown on outside click */
+    document.addEventListener('click', (e) => {
+      if (!dropdown.contains(e.target) && e.target !== menuToggle) {
+        dropdown.style.display = 'none';
+        menuToggle.setAttribute('aria-expanded','false');
+      }
+    });
+
+    /* ========== Modal content data (you can edit these blocks) ========== */
+    const content = {
+      about: {
+        title: 'About Us',
+        body: `
+          <div>
+            <p>CODA Architecture is a Seattle-based architecture practice with a primary focus on multi-family housing and townhome developments. Our work is rooted in the belief that good design can elevate the everyday—shaping not only spaces, but the way people live and connect within them.</p>
+            <p>Much of our portfolio centers on urban infill and residential density, balancing the needs of developers with the character of neighborhoods and the experience of future residents. We understand the nuances of working within Seattle’s evolving housing landscape and bring a thoughtful, context-driven approach to every site. Our goal is always to design buildings that feel grounded in their surroundings—functional, enduring, and quietly compelling.</p>
+            <p>While multi-family and townhome projects make up the core of what we do, we also take on select commercial and single-family work. This broader experience allows us to stay nimble and think across scales—from the intimacy of a kitchen layout to the dynamics of a street-facing façade.</p>
+          </div>
+        `
+      },
+      services: {
+        title: 'Our Services',
+        body: `
+          <div>
+            <p>We offer full architectural services from concept through construction, with a focus on delivering thoughtful, efficient, and well-resolved buildings. Our expertise lies in multi-family housing and townhome design, but we bring the same level of care to every project—large or small.</p>
+            <p><strong>Our services include:</strong></p>
+            <ul>
+              <li>Feasibility studies and site planning</li>
+              <li>Schematic design and design development</li>
+              <li>Permit and construction documentation</li>
+              <li>Coordination with consultants and engineers</li>
+              <li>Construction administration</li>
+              <li>Design review and entitlement support</li>
+            </ul>
+            <p>Whether you're building a dense townhome development, a boutique apartment project, or a custom home, we’re ready to help shape a process that’s clear, creative, and grounded in experience.</p>
+          </div>
+        `
+      },
+      portfolio: {
+        title: 'Portfolio',
+        /* portfolio body includes a carousel + thumbnails that open the inner lightbox */
+        body: `
+          <div>
+            <p>COMING SOON</p>
+          </div>
+        `
+      },
+      contact: {
+        title: 'Contact Us',
+        body: `
+          <div>
+            <p>We’d love to hear from you. Whether you’re ready to start a project, looking for a collaborative partner, or just want to learn more about what we do, feel free to reach out.</p>
+            <p><strong>Email</strong>: <a href="mailto:ruib@codaarchstudio.com" style="color:var(--fg)">ruib@codaarchstudio.com</a></p>
+            <p>Studio based in the Seattle area. Meetings by appointment — remote or in-person.</p>
+          </div>
+        `
+      }
+    };
+
+    /* ========== Modal open/close logic ========== */
+    function openModal(e, key){
+      if(e) e.preventDefault();
+      dropdown.style.display = 'none'; menuToggle.setAttribute('aria-expanded','false');
+
+      const data = content[key];
+      if(!data) return;
+      modalTitle.textContent = data.title;
+      modalBody.innerHTML = data.body;
+
+      // Show backdrop & modal
+      backdrop.classList.add('active');
+      backdrop.setAttribute('aria-hidden','false');
+      body.classList.add('modal-open'); // hides logo via CSS
+      // focus management
+      modalClose.focus();
+
+      // initialize any interactive bits inside modal (carousel, thumbnails)
+      initModalInteractions(key);
+    }
+
+    function closeModal(){
+      // if lightbox open, close that first
+      if(innerLightbox.classList.contains('active')){
+        closeInnerLightbox();
+        return;
+      }
+      backdrop.classList.remove('active');
+      backdrop.setAttribute('aria-hidden','true');
+      body.classList.remove('modal-open');
+      // clear content afterwards (optional)
+      modalTitle.textContent = '';
+      modalBody.innerHTML = '';
+    }
+
+    /* clicking close button */
+    modalClose.addEventListener('click', closeModal);
+
+    /* click outside the modal to close (backdrop) */
+    backdrop.addEventListener('click', (evt) => {
+      // if clicked directly on backdrop (not on modal content), close
+      if(evt.target === backdrop){
+        closeModal();
+      }
+    });
+
+    /* ESC key to close modal or lightbox */
+    document.addEventListener('keydown', (ev) => {
+      if(ev.key === 'Escape'){
+        if(innerLightbox.classList.contains('active')) closeInnerLightbox();
+        else if(backdrop.classList.contains('active')) closeModal();
+      }
+    });
+
+    /* ========== Portfolio carousel + thumbnails initialization ========== */
+    function initModalInteractions(key){
+      // init carousel only for portfolio
+      if(key === 'portfolio'){
+        const track = document.getElementById('portfolio-track');
+        const slides = track.querySelectorAll('.portfolio-slide');
+        let current = 0;
+
+        const left = document.getElementById('carousel-left');
+        const right = document.getElementById('carousel-right');
+
+        function update(){
+          track.style.transform = `translateX(-${current * 100}%)`;
+        }
+        left.onclick = () => { current = (current - 1 + slides.length) % slides.length; update(); };
+        right.onclick = () => { current = (current + 1) % slides.length; update(); };
+
+        // thumbnail click -> open inner lightbox
+        const thumbs = track.querySelectorAll('.thumbnail');
+        thumbs.forEach(t => {
+          t.addEventListener('click', (ev) => {
+            const src = t.getAttribute('data-src') || t.src;
+            openInnerLightbox(src);
+          });
+        });
+
+        // ensure first slide visible
+        update();
+      } else {
+        // For other modals, we may want links inside to be interactive; attach thumbnail behavior if any
+        const thumbs = modalBody.querySelectorAll('.thumbnail');
+        thumbs.forEach(t => {
+          t.addEventListener('click', () => {
+            const src = t.getAttribute('data-src') || t.src;
+            openInnerLightbox(src);
+          });
+        });
+      }
+    }
+
+    /* ========== Inner lightbox functions ========== */
+    function openInnerLightbox(src){
+      if(!src) return;
+      lightboxImg.src = src;
+      innerLightbox.classList.add('active');
+      innerLightbox.setAttribute('aria-hidden','false');
+      lbCloseBtn.focus();
+    }
+    function closeInnerLightbox(){
+      innerLightbox.classList.remove('active');
+      innerLightbox.setAttribute('aria-hidden','true');
+      lightboxImg.src = '';
+    }
+    // clicking outside image closes lightbox
+    innerLightbox.addEventListener('click', (e) => {
+      if(e.target === innerLightbox || e.target === lbCloseBtn) closeInnerLightbox();
+    });
+    lbCloseBtn.addEventListener('click', closeInnerLightbox);
+
+    /* Accessibility note: prevent body interaction while modal open
+       (we hide main logo and disable scroll; more advanced focus trap can be added if needed) */
+
+    /* Optional: Prevent pointer events on background content while modal open (already mostly covered by backdrop) */
+    // done via z-index order
+
+    /* Small enhancement: close any open dropdown if user resizes or scrolls (no page scroll here) */
+    window.addEventListener('resize', () => { dropdown.style.display = 'none'; menuToggle.setAttribute('aria-expanded','false'); });
+
+    /* End of script */
+  </script>
+	<footer style="position: fixed; bottom: 10px; width: 100%; text-align: center; color: #DADADA; font-size: 12px;">
+	&copy; We are a Shoreline based architecture firm known for its high quality multifamily, mixed-use, and residential architecture throught the Seattle area.</br>
+	Copyright CODA Architects LLC. 2025.
+    </footer>
+</body>
+</html>
