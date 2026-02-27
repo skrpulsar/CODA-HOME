@@ -35,6 +35,116 @@
       z-index:0;
       pointer-events:none;
     }
+.container {
+    display: flex; /* Enables flexbox layout */
+    align-items: center; /* Vertically centers items */
+    gap: 20px; /* Adds space between the image and the text */
+}
+
+.container img {
+    max-width: 300px; /* Adjust image size as needed */
+    height: 300px;
+}
+
+.text-content {
+    /* Optional: Add padding or width adjustments */
+    padding: 10px;
+}
+
+.list {
+  max-width: 1400px;
+  margin: 20px auto;
+}
+
+.img-list a {
+  text-decoration: none;
+}
+
+.li-sub p {
+  margin: 0;
+}
+
+.list li {
+  border-bottom: 1px solid #ccc;
+  display: table;
+  border-collapse: collapse;
+  width: 100%;
+}
+.inner {
+  display: table-row;
+  overflow: hidden;
+}
+.li-img {
+  display: table-cell;
+  vertical-align: middle;
+  width: 30%;
+  padding-right: 1em;
+}
+.li-img img {
+  display: block;
+  width: 100%;
+  height: auto;
+  
+}
+.li-text {
+  display: table-cell;
+  vertical-align: middle;
+  width: 70%;
+}
+.li-head {
+  margin: 10px 0 0 0;
+}
+.li-sub {
+  margin: 0;
+}
+
+@media all and (min-width: 45em) {
+  .list li {
+    float: left;
+    width: 50%;
+  }
+}
+
+@media all and (min-width: 75em) {
+  .list li {
+    width: 33.33333%;
+  }
+}
+
+/* for flexbox */
+@supports(display: flex) {
+  .list {
+    display: flex;
+    flex-wrap: wrap;
+  }
+  
+  .li-img,
+  .li-text,
+  .list li {
+    display: block;
+    float: none;
+  }
+
+  .li-img {
+    align-self: center; /* to match the middle alignment of the original */
+  }
+  
+  .inner {
+    display: flex;
+  }
+}
+
+/* for grid */
+@supports(display: grid) {
+  .list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+  }
+  
+  .list li {
+    width: auto; /* this overrides the media queries */
+  }
+}
 
     /* --- Top-left menu --- */
     .menu{
@@ -335,11 +445,17 @@
       about: {
         title: 'About Us',
         body: `
-          <div>
-            <p>CODA Architecture is a Seattle-based architecture practice with a primary focus on multi-family housing and townhome developments. Our work is rooted in the belief that good design can elevate the everyday—shaping not only spaces, but the way people live and connect within them.</p>
-            <p>Much of our portfolio centers on urban infill and residential density, balancing the needs of developers with the character of neighborhoods and the experience of future residents. We understand the nuances of working within Seattle’s evolving housing landscape and bring a thoughtful, context-driven approach to every site. Our goal is always to design buildings that feel grounded in their surroundings—functional, enduring, and quietly compelling.</p>
-            <p>While multi-family and townhome projects make up the core of what we do, we also take on select commercial and single-family work. This broader experience allows us to stay nimble and think across scales—from the intimacy of a kitchen layout to the dynamics of a street-facing façade.</p>
-          </div>
+<div class="container">
+    <img src="Rui'sProfile.jpg" alt="Rui">
+    <div class="text-content">
+            <p>Founded in Seattle, Washington, CODA Architecture specializes in residential housing, including apartments and townhouses.</p>
+            <p>We combine technical expertise with a disciplined approach to project management and quality control. Our team stays involved from design and permitting through construction documentation and administration, ensuring continuity through clear communication and collaboration.</p>
+            <p>Our goal is simple: to deliver well-executed housing that exceeds expectations.</p></br>
+			<b>Architect: Rui Bao</b></br>
+			Principal Architect</br>
+			M.ARCH, University of Washington, 2017</br>
+    </div>
+</div>	  
         `
       },
       services: {
@@ -349,12 +465,13 @@
             <p>We offer full architectural services from concept through construction, with a focus on delivering thoughtful, efficient, and well-resolved buildings. Our expertise lies in multi-family housing and townhome design, but we bring the same level of care to every project—large or small.</p>
             <p><strong>Our services include:</strong></p>
             <ul>
-              <li>Feasibility studies and site planning</li>
-              <li>Schematic design and design development</li>
-              <li>Permit and construction documentation</li>
-              <li>Coordination with consultants and engineers</li>
-              <li>Construction administration</li>
-              <li>Design review and entitlement support</li>
+              <li>Feasibility Studies & Site Analysis</li>
+              <li>Zoning & Planning Review</li>
+              <li>Architectural Design</li>
+              <li>Permit Documentation</li>
+              <li>Construction Documents</li>
+              <li>Consultant Coordination</li>
+              <li>Construction Administration</li>
             </ul>
             <p>Whether you're building a dense townhome development, a boutique apartment project, or a custom home, we’re ready to help shape a process that’s clear, creative, and grounded in experience.</p>
           </div>
@@ -362,11 +479,91 @@
       },
       portfolio: {
         title: 'Portfolio',
-        /* portfolio body includes a carousel + thumbnails that open the inner lightbox */
         body: `
-          <div>
-            <p>COMING SOON</p>
-          </div>
+<div class="supports"></div>
+
+<ul class="list img-list">
+  <li>
+    <a href="#" class="inner">
+      <div class="li-img">
+        <img src="7th_A.jpg" alt="7th" />
+      </div>
+      <div class="li-text">
+        <h3 class="li-head">Title of Content</h3>
+        <div class="li-sub">
+          <p>Summary of content.</p>
+        </div>
+      </div>
+    </a>
+  </li>
+  <li>
+    <a href="#" class="inner">
+      <div class="li-img">
+        <img src="19th_A.jpg" alt="19th" />
+      </div>
+      <div class="li-text">
+       <h3 class="li-head">Title of Content</h3>
+        <div class="li-sub">
+          <p>Summary of content.</p>
+        </div>
+      </div>
+    </a>
+  </li>
+  <li>
+    <a href="#" class="inner">
+      <div class="li-img">
+        <img src="DEXTER_A.jpg" alt="Dexter" />
+      </div>
+      <div class="li-text">
+        <h3 class="li-head">Title of Content</h3>
+        <div class="li-sub">
+          <p>Summary of content.</p>
+          <p>Sometimes we get more content than we expected.</p>
+          <p>The design should cope with this!</p>
+        </div>
+      </div>
+    </a>
+  </li>
+  <li>
+    <a href="#" class="inner">
+      <div class="li-img">
+        <img src="Meridian_A.jpg" alt="Meridian" />
+      </div>
+      <div class="li-text">
+        <h3 class="li-head">Title of Content</h3>
+        <div class="li-sub">
+          <p>Summary of content.</p>
+        </div>
+      </div>
+    </a>
+  </li>
+  <li>
+    <a href="#" class="inner">
+      <div class="li-img">
+        <img src="Valhalla_A.jpg" alt="Valhalla" />
+      </div>
+      <div class="li-text">
+        <h3 class="li-head">Title of Content</h3>
+        <div class="li-sub">
+          <p>Summary of content.</p>
+        </div>
+      </div>
+    </a>
+  </li>
+  <li>
+    <a href="#" class="inner">
+      <div class="li-img">
+        <img src="VIOLA_A.jpg" alt="Viola" />
+      </div>
+      <div class="li-text">
+        <h3 class="li-head">Viola Apartments</h3>
+        <div class="li-sub">
+          <p>Summary of content.</p>
+        </div>
+      </div>
+    </a>
+  </li>
+</ul>
         `
       },
       contact: {
